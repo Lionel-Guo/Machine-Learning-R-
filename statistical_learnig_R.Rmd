@@ -1,0 +1,280 @@
+---
+title: "Satistical_Learning_R"
+author: 'Student ID: 473897'
+date: "1/6/2020"
+output: html_document
+---
+
+# Linear Regression
+
+```{r}
+library(MASS)
+library(ISLR)
+```
+
+## Simple Linear Regression
+### Estimate
+```{r}
+Boston
+#names(Boston)
+#help(Boston)
+```
+
+```{r}
+# Now, we will use the lm() function to fit a simple linear regression model.
+# The basic syntax is lm(y~x,data), where y is the response, x is the predictor, and data is the data set in which these two variables are kept.
+# In this example, we will use medv as the response and lstat as the predictor.
+
+lm.fit = lm(medv~lstat, data = Boston)
+lm.fit
+```
+
+```{r}
+# Or we can first attach the dataframe - Boston, then we don't need to specify the dataframe we are using
+attach(Boston)
+lm.fit = lm(medv~lstat)
+lm.fit
+```
+
+```{r}
+# use the summary funciton to view the detailed results
+summary(lm.fit)
+```
+
+```{r}
+# Except the information we can see above, we can use names function to find out other information stored in the "lm.fit" object.
+ names(lm.fit)
+```
+
+```{r}
+fitted.values(lm.fit)
+```
+
+
+```{r}
+# We can view the information stored in the "lm.fit"
+coefficients(lm.fit)
+```
+
+```{r}
+# use the confint() function to calculate the confidence interval
+confint(lm.fit)
+```
+
+### Predict
+
+```{r}
+# predict() function can be used to produce confidence intervals and prediction intervals for the prediction of medv for a given value of lstat.
+predict(lm.fit, data.frame(lstat = c(5,10,15)),interval = "confidence")
+```
+
+### visualization
+
+```{r}
+plot(lstat,medv)
+```
+
+```{r}
+# The abline() function can be used to draw any line. To draw a line with intercept a and slope b, we type abline(a,b). We also have other settings to customize the line we draw.
+plot(lstat,medv)
+abline(lm.fit)
+```
+
+```{r}
+# Make the line thicker
+plot(lstat,medv)
+abline(lm.fit,lwd = 3)
+```
+
+```{r}
+plot(lstat,medv)
+abline(lm.fit,lwd = 3, col = "red")
+```
+
+```{r}
+plot(lstat,medv,col="red")
+```
+
+```{r}
+plot(lstat,medv,pch = 20)
+```
+
+```{r}
+plot(lstat,medv,pch = "+")
+```
+
+```{r}
+plot(1:20,1:20,pch = 1:20)
+```
+
+```{r}
+# We can use par() function to view all pictures together.
+# par(mfrow = c(2,2)) can divides the plotting region into a 2*2 grid of panels.
+par(mfrow = c(2,2))
+plot(lm.fit)
+# Since we only say we plot the lm.fit, but we know there are a lot of information stored in the lm.fit object, so the function will automatically select some features to plot.
+```
+
+
+```{r}
+# Alternatively
+plot(predict(lm.fit), residuals(lm.fit))
+plot(predict(lm.fit), rstudent(lm.fit))
+```
+
+```{r}
+plot(hatvalues(lm.fit))
+which.max(hatvalues(lm.fit))
+```
+
+## Multiple Linear Regression
+
+```{r}
+lm.fit = lm(medv~.,data = Boston)
+summary(lm.fit)
+```
+
+```{r}
+lm.fit1 = lm(medv~.-age,data = Boston)
+summary(lm.fit1)
+```
+
+## Qualitative Predictors
+
+```{r}
+Carseats
+names(Carseats)
+```
+
+```{r}
+# Income:Advertising means the interaction terms
+lm.fit = lm(Sales~. + Income:Advertising + Price:Age, data = Carseats)
+summary(lm.fit)
+```
+
+```{r}
+# Through this way, we can see how R code the dummy variables.
+contrasts(Carseats$ShelveLoc)
+```
+
+# Classification
+## Import the needed data
+
+```{r}
+# The Stock Market Data
+# For this data set, we want to predict the direction by using the previous data
+library(ISLR)
+names(Smarket)
+summary(Smarket)
+Smarket
+```
+
+```{r}
+# Use cor function to get the first insight about which predictors are more likely to contribute more to the prediction of Direction
+cor(Smarket[,-9])
+```
+
+```{r}
+plot(Smarket$Volume)
+```
+
+## Logistic Regression
+
+```{r}
+# Now, we will use glm() functions to predict Direction using Lag1 throug lag5 and Volume.
+# The syntax of the glm() function is similar to that of lm(), except that we must pass in the argument family = binomial in order to tell R to run a logistic regression rather than some other type of generalized linear model.
+glm.fit = glm(Direction~.-Year-Today, data = Smarket, family = binomial)
+summary(glm.fit)
+```
+
+### Try to predict
+
+```{r}
+glm.probs = predict(glm.fit, type = "response")
+glm.probs[1:10]
+contrasts(Smarket$Direction)
+```
+
+```{r}
+glm.pred = rep("Down", 1250)
+glm.pred[glm.probs>.5] = "Up"
+table(glm.pred, Smarket$Direction)
+```
+
+```{r}
+# It seems that the prediction is really inaccurate.
+mean(glm.pred != Smarket$Direction)
+```
+
+### Now, for the first, we will try to divide the data into training set and test set.
+
+```{r}
+train = (Smarket$Year<2005)
+Smarket.2005 = Smarket[!train,]
+Direction.2005 = Smarket$Direction[!train]
+dim(Smarket.2005)
+```
+
+```{r}
+glm.fit = glm(Direction~.-Year-Today, data = Smarket, family = binomial, subset = train)
+glm.probs = predict(glm.fit,Smarket.2005,type="response")
+```
+
+```{r}
+glm.pred = rep("Down", 252)
+glm.pred[glm.probs>.5] = "Up"
+table(glm.pred, Direction.2005)
+mean(glm.pred != Direction.2005)
+```
+
+```{r}
+# The model is really unaccurate, and now we try to use some different predictors
+glm.fit = glm(Direction~Lag1+Lag2, data = Smarket, subset = train, family = binomial)
+glm.probs = predict(glm.fit, Smarket.2005, type = "response")
+glm.pred = rep("Down", 252)
+glm.pred[glm.probs>.5] = "Up"
+table(glm.pred, Direction.2005)
+mean(glm.pred == Direction.2005)
+```
+
+## Linear Discriminant Analysis
+```{r}
+lda.fit = lda(Direction~Lag1+Lag2, data = Smarket, subset = train)
+lda.fit
+plot(lda.fit)
+```
+
+```{r}
+lda.pred = predict(lda.fit, Smarket.2005)
+names(lda.pred)
+```
+
+```{r}
+lda.class = lda.pred$class
+lda.class
+```
+
+```{r}
+table(lda.class, Direction.2005)
+mean(lda.class == Direction.2005)
+```
+
+```{r}
+lda.pred$posterior
+```
+
+```{r}
+sum(lda.pred$posterior[,1]>=.5)
+sum(lda.pred$posterior[,1]<.5)
+```
+
+```{r}
+# If we want to use a posterior probability threshold other than 50% in order to make predictions, then we could easily do so. For instance, suppose that we wish to predict a market decrease only if we are very certain that the market will indeed decrease on that day -- say, if the posterior probability is at least 90%.
+lda.pred2 = rep("Down",252)
+lda.pred2[lda.pred$posterior[,1]>.9] = "Up"
+lda.pred2
+```
+
+
+
+
